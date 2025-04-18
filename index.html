@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My HR Chatbot</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f4f8; margin: 0; padding: 0; }
+    .chatbox { width: 100%; max-width: 480px; margin: 40px auto; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); background: #fff; overflow: hidden; }
+    .chat-header { background: #004080; color: #fff; padding: 15px; font-weight: bold; text-align: center; }
+    .chat-messages { height: 400px; overflow-y: auto; padding: 15px; background: #eef3f9; }
+    .chat-input { display: flex; flex-direction: row; border-top: 1px solid #ccc; }
+    .chat-input input { flex: 1; padding: 12px; border: none; font-size: 14px; }
+    .chat-input button, .chat-input .mic-button { background: #004080; color: #fff; border: none; padding: 12px 16px; cursor: pointer; font-size: 14px; }
+    .message { margin: 10px 0; }
+    .user { text-align: right; color: #004080; }
+    .bot { text-align: left; color: #333; }
+    .suggestions { padding: 10px; background: #dbe9ff; border-top: 1px solid #ccc; font-size: 13px; color: #004080; }
+    .suggestions span { cursor: pointer; margin: 3px; display: inline-block; background: #fff; border: 1px solid #004080; padding: 4px 8px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="chatbox">
+    <div class="chat-header">My HR Assistant</div>
+    <div class="chat-messages" id="chat"></div>
+    <div class="suggestions" id="suggestionBox"></div>
+    <div class="chat-input">
+      <input type="text" id="userInput" placeholder="Ask a question..." oninput="showSuggestions(this.value)">
+      <button class="mic-button" onclick="startListening()">🎤</button>
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatbotResponses = {
+      "leave": "You are entitled to 24 days PL and 14 days SL annually.",
+      "maternity": "You can take 16 weeks maternity leave (8 before + 8 after). Max 2 times allowed.",
+      "salary": "Salary is paid by the last working day of each month.",
+      "bonus": "You receive 2 festival bonuses each year.",
+      "notice": "Standard notice period is 3 months or salary in lieu.",
+      "motorcycle": "Yes, 95% covered by ACI, repayable in 72 months.",
+      "gratuity": "Gratuity is payable after 8 years of continuous service. Amount is based on last basic salary and total years served.",
+      "provident fund": "You can join after confirmation. Both you and ACI contribute 10% of basic salary. ACI's part is payable after 5 years of service.",
+      "medical policy": "ACI Medical Policy includes eligibility (employee, spouse, dependent children under 18 or with disability), treatment categories (50% for non-surgery, 75% for surgery, C-section capped at BDT 1,00,000 for 2 children), required documents, exclusions (cosmetic, dental, more than 2 childbirths), prior approval, and claim deadlines. Foreign treatment needs MD approval.",
+      "eligible person": "Eligible: permanent employees, legally married spouse (marriage certificate), dependent children under 18 or with permanent disability (birth certificate/disability certificate).",
+      "medical rates": "Hospitalization (non-surgery): 50%. Surgery/C-section: 75%. C-section up to BDT 1,00,000 for 2 children. Includes bed, doctor, OT, anesthetist, medicine.",
+      "excluded treatments": "Not covered: cosmetic surgery (rhinoplasty, facelift, LASIK), non-essential dental/orthodontics, wellness check-ups, >2 childbirths, foreign treatment without MD approval.",
+      "required documents": "Submit: application letter, prior approval, admission/discharge certificate, dependent proof, original bills, prescriptions, diagnosis, medicine list, test reports, bank details.",
+      "claim deadline": "Claims must be submitted within 1 month of discharge using form HRM/10.3/03/21. Late (up to 3 months) needs business head note. >3 months = invalid.",
+      "credit facility": "Available at listed hospitals. HR issues forwarding letter. Bill sent directly to HR. Employee share deducted from salary in 1–12 installments."
+    };
+
+    function sendMessage() {
+      const input = document.getElementById("userInput");
+      const chat = document.getElementById("chat");
+      const msg = input.value.trim();
+      if (!msg) return;
+
+      chat.innerHTML += `<div class='message user'>${msg}</div>`;
+
+      const response = getBotReply(msg.toLowerCase());
+      setTimeout(() => {
+        chat.innerHTML += `<div class='message bot'>${response}</div>`;
+        chat.scrollTop = chat.scrollHeight;
+      }, 500);
+
+      input.value = "";
+      showSuggestions("");
+    }
+
+    function getBotReply(query) {
+      for (const key in chatbotResponses) {
+        if (query.includes(key)) return chatbotResponses[key];
+      }
+      return "Sorry, I didn’t understand that. Please try again or contact HR.";
+    }
+
+    function useSuggestion(el) {
+      document.getElementById("userInput").value = el.innerText;
+      sendMessage();
+    }
+
+    function showSuggestions(input) {
+      const suggestionBox = document.getElementById("suggestionBox");
+      const keywords = Object.keys(chatbotResponses);
+      const matches = keywords.filter(k => k.includes(input.toLowerCase())).slice(0, 5);
+      suggestionBox.innerHTML = matches.length ? "Suggestions: " + matches.map(k => `<span onclick='useSuggestion(this)'>${k}</span>`).join(" ") : "";
+    }
+
+    function startListening() {
+      if (!('webkitSpeechRecognition' in window)) {
+        alert('Sorry, your browser does not support speech recognition.');
+        return;
+      }
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.start();
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript;
+        document.getElementById("userInput").value = transcript;
+        sendMessage();
+      };
+      recognition.onerror = function(event) {
+        console.error('Speech recognition error', event);
+      };
+    }
+  </script>
+</body>
+</html>
